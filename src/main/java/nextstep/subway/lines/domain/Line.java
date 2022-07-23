@@ -6,6 +6,8 @@ import org.springframework.util.StringUtils;
 import javax.persistence.*;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 @Entity
 @Table(name = "line", uniqueConstraints = {
@@ -33,7 +35,7 @@ public class Line {
         this.name = name.trim();
         this.color = color.trim();
         this.sections = new Sections();
-        this.sections.addSection(upStation, downStation, distance);
+        this.sections.addSection(new Section(upStation, downStation, distance));
     }
 
     public static Line makeLine(final String name, final String color, final Station upStation, final Station downStation, final int distance) {
@@ -84,86 +86,15 @@ public class Line {
         }
     }
 
-    private boolean isSectionsEmpty() {
-        return this.sections.isEmpty();
-    }
-
-    private void validateSectionsEmpty() {
-        if(isSectionsEmpty()) {
-            throw new IllegalStateException("");
-        }
-    }
-
-    private Section findUpSection() {
-
-        // 구간이 비어있을경우 예외처리
-        validateSectionsEmpty();
-        Section upSection = this.sections.findFirst();
-
-        while(upSection != null) {
-            boolean isFind = false;
-            for(Section section : sections) {
-                // 현재구간의 상행역과 다른구간의 하행역이 같은지 체크
-                if(upSection.correctUpStationFromOtherSectionDownStation(section)) {
-                    upSection = section;
-                    isFind = true;
-                    break;
-                }
-            }
-
-            if(!isFind) {
-                break;
-            }
-        }
-        return upSection;
-    }
-    private Section findDownSection() {
-
-        // 구간이 비어있을경우 예외처리
-        validateSectionsEmpty();
-        Section downSection = this.sections.findFirst();
-
-        while(downSection != null) {
-            boolean isFind = false;
-            for(Section section : sections) {
-                //현재 구간의 하행역과 다른구간의 상행역이 같은지 체크
-                if(downSection.correctDownStationFromOtherSectionUpStation(section)) {
-                    downSection = section;
-                    isFind = true;
-                    break;
-                }
-            }
-
-            if(!isFind) {
-                break;
-            }
-        }
-        return downSection;
-    }
-
-    public void addSection(Station upStation, Station downStation, int distance) {
-
-        Section upSection = findUpSection();
-        Section downSection = findDownSection();
-
-        if(upSection.isUpStation(downStation) || downSection.isDownStation(upStation)) {
-            this.sections.addSection(upStation, downStation, distance);
-            return;
-        }
-
-        throw new IllegalStateException("");
+    public boolean addSection(Station upStation, Station downStation, int distance) {
+        return this.sections.addSection(upStation, downStation, distance);
     }
 
     /**
      * 구간 제거
      * @param station
      */
-    public void removeSection(Station station) {
-
-        Section downSection = findDownSection();
-
-        if(downSection.isDownStation(station)) {
-           this.sections.removeSection(downSection);
-        }
+    public boolean removeSection(Station station) {
+        return this.sections.removeSection(station);
     }
 }

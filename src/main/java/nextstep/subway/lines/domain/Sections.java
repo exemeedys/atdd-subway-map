@@ -7,6 +7,8 @@ import javax.persistence.Embeddable;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 @Embeddable
 public class Sections implements Iterable<Section> {
@@ -15,31 +17,91 @@ public class Sections implements Iterable<Section> {
     @JoinColumn(name = "line_id")
     List<Section> sections = new ArrayList<>();
 
-    public void addSection(Station upStation, Station downStation, int distance) {
-        addSection(new Section(upStation, downStation, distance));
+    public boolean addSection(Station upStation, Station downStation, int distance) {
+
+        Section upSection = findUpSection();
+        Section downSection = findDownSection();
+
+        if(upSection.isUpStation(downStation) || downSection.isDownStation(upStation)) {
+            addSection(new Section(upStation, downStation, distance));
+            return true;
+        }
+
+        throw new IllegalStateException("");
     }
 
-    public void addSection(Section section) {
+    protected void addSection(Section section) {
         this.sections.add(section);
     }
 
-    public void removeSection(Section section) {
+    private void throwIfSectionsOne() {
         if(this.sections.size() == 1) {
             throw new IllegalStateException("");
         }
-        this.sections.remove(section);
     }
 
-    public boolean isEmpty() {
-        return this.sections.isEmpty();
-    }
-
-    public Section findFirst() {
+    private Section findFirst() {
         if(!isEmpty()) {
             return this.sections.get(0);
         }
 
         throw new IllegalStateException("");
+    }
+
+    private Section findSectionOnLine(Section firstSection, BiPredicate<Section, Section> findSectionStrategy) {
+
+        // 구간이 비어있을경우 예외를 던짐
+        throwIfSectionsEmpty();
+        Section findSection = firstSection;
+
+        while(firstSection != null) {
+            findSection = firstSection;
+            firstSection = correctSection(firstSection, findSectionStrategy).orElse(null);
+        }
+        return findSection;
+    }
+
+    private Optional<Section> correctSection(Section firstSection,BiPredicate<Section, Section> findSectionStrategy) {
+        for(Section section : sections) {
+            if(findSectionStrategy.test(firstSection, section)) {
+                return Optional.ofNullable(section);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Section findUpSection() {
+        Section upSection = findFirst();
+        return findSectionOnLine(upSection, (findSection, section) -> findSection.correctUpStationFromOtherSectionDownStation(section));
+    }
+
+    private Section findDownSection() {
+        Section downSection = findFirst();
+        return findSectionOnLine(downSection, (findSection, section) -> findSection.correctDownStationFromOtherSectionUpStation(section));
+    }
+
+    private void throwIfSectionsEmpty() {
+        if(isSectionsEmpty()) {
+            throw new IllegalStateException();
+        }
+    }
+
+    private boolean isSectionsEmpty() {
+        return this.sections.isEmpty();
+    }
+
+    public boolean removeSection(Station station) {
+
+        Section downSection = findDownSection();
+        if(downSection.isDownStation(station)) {
+            throwIfSectionsOne();
+            return this.sections.remove(downSection);
+        }
+        return false;
+    }
+
+    public boolean isEmpty() {
+        return this.sections.isEmpty();
     }
 
     @Override
@@ -52,9 +114,11 @@ public class Sections implements Iterable<Section> {
 
         for(Section section : this.sections) {
             stations.add(section.getUpStation());
-            stations.add(section.getUpStation());
+            stations.add(section.getDownStation());
         }
 
         return stations;
     }
+
+
 }

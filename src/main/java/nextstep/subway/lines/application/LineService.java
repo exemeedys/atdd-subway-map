@@ -66,16 +66,16 @@ public class LineService {
                 .orElseThrow(() -> new EntityNotExistException("지하철 노선을 찾을 수 없습니다. id = " + lineId));
     }
 
-    public void addSection(Long lineId, SectionRequest sectionRequest) {
+    public boolean addSection(Long lineId, SectionRequest sectionRequest) {
         Line line = findById(lineId);
         Station upStation = stationService.findById(sectionRequest.getUpStationId());
         Station downStation = stationService.findById(sectionRequest.getDownStationId());
-        line.addSection(upStation, downStation, sectionRequest.getDistance());
+        return line.addSection(upStation, downStation, sectionRequest.getDistance());
     }
 
-    public void removeSection(Long lineId, Long stationId) {
+    public boolean removeSection(Long lineId, Long stationId) {
         Line line = findById(lineId);
         Station downStation = stationService.findById(stationId);
-        line.removeSection(downStation);
+        return line.removeSection(downStation);
     }
 }

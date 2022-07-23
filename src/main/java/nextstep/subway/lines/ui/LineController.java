@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 
@@ -56,14 +55,16 @@ public class LineController {
 
     @PostMapping(value = "/{lineId}/sections")
     public ResponseEntity<Void> addSection(@PathVariable Long lineId, @RequestBody SectionRequest sectionRequest) {
-        lineService.addSection(lineId, sectionRequest);
-        return ResponseEntity.created(URI.create("/lines")).build();
+        return lineService.addSection(lineId, sectionRequest) ?
+                ResponseEntity.created(URI.create("/lines")).build() :
+                ResponseEntity.badRequest().build();
     }
 
     @DeleteMapping(value = "/{lineId}/sections")
     public ResponseEntity<Void> removeSection(@PathVariable Long lineId,
                                               @RequestParam Long stationId) {
-        lineService.removeSection(lineId, stationId);
-        return ResponseEntity.noContent().build();
+        return lineService.removeSection(lineId, stationId) ?
+                ResponseEntity.noContent().build() :
+                ResponseEntity.badRequest().build();
     }
 }

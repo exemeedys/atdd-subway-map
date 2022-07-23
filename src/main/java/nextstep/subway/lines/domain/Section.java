@@ -13,10 +13,12 @@ public class Section {
     @Column(name = "section_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "up_station_id")
     private Station upStation;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "down_station_id")
     private Station downStation;
 
     @Embedded
@@ -33,6 +35,12 @@ public class Section {
         this.distance = new Distance(distance);
     }
 
+    private static void validateUpAndDownStation(Station upStation, Station downStation) {
+        if(upStation.equals(downStation)) {
+            throw new IllegalArgumentException("상행과 하행이 같습니다.");
+        }
+    }
+
     public Station getUpStation() {
         return this.upStation;
     }
@@ -41,18 +49,12 @@ public class Section {
         return this.downStation;
     }
 
-    private static void validateUpAndDownStation(Station upStation, Station downStation) {
-        if(upStation.equals(downStation)) {
-            throw new IllegalArgumentException("상행과 하행이 같습니다.");
-        }
-    }
-
     public boolean correctDownStationFromOtherSectionUpStation(Section section) {
-        return this.downStation.equals(section.upStation);
+        return isDownStation(section.upStation);
     }
 
     public boolean correctUpStationFromOtherSectionDownStation(Section section) {
-        return this.upStation.equals(section.downStation);
+        return isUpStation(section.downStation);
     }
 
     public boolean isUpStation(Station station) {
